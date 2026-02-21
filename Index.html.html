@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud DevOps Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ===== RESET & BASE ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #152238 0%, #152238 100%);
+            color: #E49E7E;
+            min-height: 100vh;
+            padding: 200px;
+        }
+
+        /* ===== DASHBOARD CONTAINER ===== */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        /* ===== HEADER ===== */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .header-left h1 {
+            font-size: 28px;
+            color: #E49E7E;
+            margin-bottom: 8px;
+        }
+
+        .header-left h1 i {
+            margin-right: 12px;
+        }
+
+        .subtitle {
+            color: #E49E7E ;
+            font-size: 14px;
+        }
+
+        /* ===== STATUS BADGE ===== */
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            background: #10b981;
+            color: white;
+        }
+
+        /* ===== REFRESH BUTTON ===== */
+        .refresh-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s;
+            margin-left: 16px;
+        }
+
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+
+        .refresh-btn i {
+            transition: transform 0.5s;
+        }
+
+        .refresh-btn:active i {
+            transform: rotate(360deg);
+        }
+
+        /* ===== SERVICE TAGS ===== */
+        .services-status {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 32px;
+            justify-content: center;
+        }
+
+        .service-tag {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .service-tag.appgw { background: #8b5cf6; color: white; }
+        .service-tag.apim { background: #06b6d4; color: white; }
+        .service-tag.aks { background: #10b981; color: white; }
+        .service-tag.ado { background: #f59e0b; color: white; }
+
+        /* ===== DASHBOARD GRID ===== */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        /* ===== MONITORING TILES ===== */
+        .monitoring-tile {
+            background: #1e293b;
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #334155;
+        }
+
+        .monitoring-tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .monitoring-tile:nth-child(2) { border-left-color: #10b981; }
+        .monitoring-tile:nth-child(3) { border-left-color: #f59e0b; }
+        .monitoring-tile:nth-child(4) { border-left-color: #8b5cf6; }
+
+        /* ===== TILE HEADER ===== */
+        .tile-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .tile-header h3 {
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ===== STATUS INDICATORS ===== */
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.healthy { background: #10b981; }
+        .status-indicator.warning { background: #f59e0b; }
+        .status-indicator.critical { background: #ef4444; }
+
+        /* ===== TILE CONTENT ===== */
+        .tile-content {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .metric {
+            text-align: center;
+            padding: 12px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .metric-value {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: #60a5fa;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== TILE FOOTER ===== */
+        .tile-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .source {
+            color: #60a5fa;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* ===== FOOTER ===== */
+        .dashboard-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+            border-top: 1px solid #334155;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .toggle {
+            color: #60a5fa;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+            
+            .header-right {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                align-items: center;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tile-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .monitoring-tile {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .monitoring-tile:nth-child(1) { animation-delay: 0.1s; }
+        .monitoring-tile:nth-child(2) { animation-delay: 0.2s; }
+        .monitoring-tile:nth-child(3) { animation-delay: 0.3s; }
+        .monitoring-tile:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1><i class="fas fa-cloud"></i> Cloud DevOps Dashboard</h1>
+                <p class="subtitle">Monitor your Azure services in real-time</p>
+            </div>
+            <div class="header-right">
+                <span class="status-badge">All Systems Operational</span>
+                <button class="refresh-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Service Status -->
+        <div class="services-status">
+            <div class="service-tag appgw">AppGW</div>
+            <div class="service-tag apim">APIM</div>
+            <div class="service-tag aks">AKS</div>
+            <div class="service-tag ado">ADO</div>
+        </div>
+
+        <!-- Monitoring Tiles -->
+        <div class="dashboard-grid">
+            <!-- API Monitoring -->
+            <div class="monitoring-tile">
+                <div class="tile-header">
+                    <h3><i class="fas fa-chart-line"></i> API Monitoring</h3>
+                    <span class="status-indicator healthy"></span>
+                </div>
+                <div class="tile-content">
+                    <div class="metric">
+                        <span class="metric-value" id="apiRequests">12.5k</span>
+                        <span class="metric-label">Requests/min</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="apiLatency">42ms</span>
+                        <span class="metric-label">Avg Latency</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="apiAvailability">99.95%</span>
+                        <span class="metric-label">Availability</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <span class="source">Azure Monitor</span>
+                </div>
+            </div>
+
+            <!-- AKS Monitoring -->
+            <div class="monitoring-tile">
+                <div class="tile-header">
+                    <h3><i class="fas fa-server"></i> AKS Monitoring</h3>
+                    <span class="status-indicator warning"></span>
+                </div>
+                <div class="tile-content">
+                    <div class="metric">
+                        <span class="metric-value" id="aksNodes">8</span>
+                        <span class="metric-label">Nodes</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="aksPods">142</span>
+                        <span class="metric-label">Pods</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="aksCPU">68%</span>
+                        <span class="metric-label">CPU Usage</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <span class="source">Azure Monitor</span>
+                </div>
+            </div>
+
+            <!-- ADO Agents -->
+            <div class="monitoring-tile">
+                <div class="tile-header">
+                    <h3><i class="fas fa-robot"></i> ADO Agents</h3>
+                    <span class="status-indicator critical"></span>
+                </div>
+                <div class="tile-content">
+                    <div class="metric">
+                        <span class="metric-value" id="adoOnline">14/17</span>
+                        <span class="metric-label">Online</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="adoBusy">8</span>
+                        <span class="metric-label">Busy</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="adoOffline">3</span>
+                        <span class="metric-label">Offline</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <span class="source">azure monitor</span>
+                </div>
+            </div>
+
+            <!-- AppGW Monitoring -->
+            <div class="monitoring-tile">
+                <div class="tile-header">
+                    <h3><i class="fas fa-network-wired"></i> AppGW Monitoring</h3>
+                    <span class="status-indicator healthy"></span>
+                </div>
+                <div class="tile-content">
+                    <div class="metric">
+                        <span class="metric-value" id="appgwThroughput">2.1</span>
+                        <span class="metric-label">Gbps</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="appgwErrors">0.02%</span>
+                        <span class="metric-label">Error Rate</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value" id="appgwHealth">100%</span>
+                        <span class="metric-label">Health</span>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <span class="source">Azure Monitor</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>Last Updated: <span id="lastUpdated">Just now</span></p>
+            <p>Auto Refresh: <span class="toggle" id="autoRefreshToggle">Off</span></p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Cloud DevOps Dashboard Application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Cloud DevOps Dashboard loaded');
+            
+            // Elements
+            const refreshBtn = document.getElementById('refreshBtn');
+            const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+            const lastUpdatedEl = document.getElementById('lastUpdated');
+            
+            // Refresh button
+            refreshBtn.addEventListener('click', refreshDashboard);
+            
+            // Auto-refresh toggle
+            autoRefreshToggle.addEventListener('click', toggleAutoRefresh);
+            
+            // Initialize
+            updateTimestamp();
+            console.log('✅ Dashboard initialized');
+            
+            // Functions
+            function refreshDashboard() {
+                console.log('🔄 Refreshing dashboard...');
+                
+                // Show loading
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                refreshBtn.disabled = true;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    // Update metrics with random values
+                    updateAllMetrics();
+                    
+                    // Update timestamp
+                    updateTimestamp();
+                    
+                    // Reset button
+                    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+                    refreshBtn.disabled = false;
+                    
+                    console.log('✅ Dashboard refreshed at ' + new Date().toLocaleTimeString());
+                    
+                    // Show notification
+                    showNotification('Dashboard refreshed successfully!', 'success');
+                }, 1500);
+            }
+            
+            function toggleAutoRefresh() {
+                const toggle = autoRefreshToggle;
+                if (toggle.textContent === 'Off') {
+                    toggle.textContent = 'On';
+                    toggle.style.color = '#10b981';
+                    
+                    // Start auto-refresh every 30 seconds
+                    window.autoRefreshInterval = setInterval(refreshDashboard, 30000);
+                    console.log('✅ Auto-refresh enabled (every 30 seconds)');
+                    showNotification('Auto-refresh enabled', 'info');
+                } else {
+                    toggle.textContent = 'Off';
+                    toggle.style.color = '#60a5fa';
+                    
+                    // Stop auto-refresh
+                    clearInterval(window.autoRefreshInterval);
+                    console.log('⏹️ Auto-refresh disabled');
+                    showNotification('Auto-refresh disabled', 'info');
+                }
+            }
+            
+            function updateAllMetrics() {
+                // API Monitoring
+                updateMetric('apiRequests', (12.5 + Math.random()).toFixed(1) + 'k');
+                updateMetric('apiLatency', (40 + Math.random() * 10).toFixed(0) + 'ms');
+                updateMetric('apiAvailability', (99.9 + Math.random() * 0.1).toFixed(2) + '%');
+                
+                // AKS Monitoring
+                updateMetric('aksNodes', '8');
+                updateMetric('aksPods', (140 + Math.floor(Math.random() * 10)).toString());
+                updateMetric('aksCPU', (65 + Math.random() * 10).toFixed(0) + '%');
+                
+                // ADO Agents
+                updateMetric('adoOnline', `${14 + Math.floor(Math.random() * 2)}/17`);
+                updateMetric('adoBusy', (7 + Math.floor(Math.random() * 3)).toString());
+                updateMetric('adoOffline', (2 + Math.floor(Math.random() * 2)).toString());
+                
+                // AppGW Monitoring
+                updateMetric('appgwThroughput', (2.0 + Math.random() * 0.3).toFixed(1));
+                updateMetric('appgwErrors', (0.01 + Math.random() * 0.02).toFixed(2) + '%');
+                updateMetric('appgwHealth', '100%');
+            }
+            
+            function updateMetric(elementId, value) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    // Animation
+                    element.style.transform = 'scale(1.2)';
+                    element.style.color = '#f59e0b';
+                    
+                    setTimeout(() => {
+                        element.textContent = value;
+                        element.style.transform = 'scale(1)';
+                        element.style.color = '#60a5fa';
+                    }, 300);
+                }
+            }
+            
+            function updateTimestamp() {
+                const now = new Date();
+                lastUpdatedEl.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            }
+            
+            function showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.textContent = message;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#10b981' : '#3b82f6'};
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    z-index: 1000;
+                    font-weight: 500;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    animation: slideIn 0.3s ease-out;
+                `;
+                
+                // Add animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                document.body.appendChild(notification);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    notification.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Add click effects to tiles
+            document.querySelectorAll('.monitoring-tile').forEach(tile => {
+                tile.addEventListener('click', function() {
+                    this.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.5)';
+                    setTimeout(() => {
+                        this.style.boxShadow = '';
+                    }, 500);
+                });
+            });
+            
+            // Initial data load
+            refreshDashboard();
+        });
+    </script>
+</body>
+</html>
